@@ -1,146 +1,136 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
-import { PlusCircle, List, Bus, Shield } from 'lucide-react';
+import SearchForm from '@/components/SearchForm';
+import ItineraryCard from '@/components/ItineraryCard';
+import SkeletonCard from '@/components/SkeletonCard';
+import { Location, RouteResult } from '@/lib/types';
+import { supabase } from '@/lib/supabase';
 
-export default function AdminPage() {
-  const [routeName, setRouteName] = useState('');
-  const [vehicleType, setVehicleType] = useState('Minibus Taxi');
-  const [stops, setStops] = useState('');
-  const [baseFare, setBaseFare] = useState('');
+const FALLBACK_LOCATIONS: Location[] = [
+  { id: 'loc-1', name: 'Bole', sub_city: 'Bole' },
+  { id: 'loc-2', name: 'Megenagna', sub_city: 'Yeka' },
+  { id: 'loc-3', name: 'Piazza', sub_city: 'Arada' },
+  { id: 'loc-4', name: 'Mexico', sub_city: 'Kirkos' },
+  { id: 'loc-5', name: '4 Kilo', sub_city: 'Arada' },
+  { id: 'loc-6', name: 'Gotera', sub_city: 'Nifas Silk-Lafto' },
+  { id: 'loc-7', name: 'Kality', sub_city: 'Akaki-Kality' },
+];
 
-  const handleAddRoute = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert(`Mock Route Created:\nName: ${routeName}\nVehicle: ${vehicleType}\nStops: ${stops}\nBase Fare: ${baseFare} ETB`);
-    setRouteName('');
-    setStops('');
-    setBaseFare('');
+const FALLBACK_ROUTES: RouteResult[] = [
+  {
+    route_id: '1',
+    route_name: 'Bole to Piazza Direct',
+    vehicle_type: 'Minibus Taxi',
+    origin_stop: 'loc-1',
+    destination_stop: 'loc-3',
+    total_fare: 25.0,
+    stops_breakdown: ['Bole', 'Gotera', 'Mexico', 'Piazza'],
+  },
+  {
+    route_id: '2',
+    route_name: 'Kality to 4 Kilo Rail Line',
+    vehicle_type: 'Light Rail',
+    origin_stop: 'loc-7',
+    destination_stop: 'loc-5',
+    total_fare: 10.0,
+    stops_breakdown: ['Kality', 'Saris', 'Gotera', 'Mexico', '4 Kilo'],
+  },
+];
+
+export default function Home() {
+  const [locations, setLocations] = useState<Location[]>(FALLBACK_LOCATIONS);
+  const [filteredRoutes, setFilteredRoutes] = useState<RouteResult[]>(FALLBACK_ROUTES);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch locations on mount
+  useEffect(() => {
+    async function fetchLocations() {
+      try {
+        const { data, error } = await supabase.from('locations').select('*');
+        if (data && data.length > 0) {
+          setLocations(data);
+        }
+      } catch (err) {
+        console.log('Using local fallback locations until Supabase is live.');
+      }
+    }
+    fetchLocations();
+  }, []);
+
+  const handleSearch = async (originId: string, destinationId: string) => {
+    setIsLoading(true);
+    setHasSearched(true);
+
+    try {
+      // Query routes matching origin/destination from Supabase
+      const { data, error } = await supabase
+        .from('routes')
+        .select('*');
+
+      if (data && data.length > 0) {
+        // Map database response to UI structure
+        const mapped: RouteResult[] = data.map((r) => ({
+          route_id: r.id,
+          route_name: r.route_name,
+          vehicle_type: r.vehicle_type,
+          origin_stop: originId,
+          destination_stop: destinationId,
+          total_fare: parseFloat(r.base_fare),
+          stops_breakdown: [r.route_name],
+        }));
+        setFilteredRoutes(mapped);
+      } else {
+        // Fallback filter logic
+        const matches = FALLBACK_ROUTES.filter(
+          (route) => route.origin_stop === originId || route.destination_stop === destinationId
+        );
+        setFilteredRoutes(matches.length > 0 ? matches : FALLBACK_ROUTES);
+      }
+    } catch (err) {
+      console.log('Query fallback executed.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <main className="min-h-screen bg-slate-50 pb-12">
       <Navbar />
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center gap-3 mb-8">
-          <Shield className="w-8 h-8 text-emerald-600" />
-          <div>
-            <h1 className="text-2xl font-extrabold text-slate-900">Transit System Administration</h1>
-            <p className="text-slate-600 text-sm">Add and manage public transport routes, vehicle types, and fare tables.</p>
-          </div>
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-extrabold text-slate-900 mb-2">
+            Addis Ababa Transit & Fare Finder
+          </h1>
+          <p className="text-slate-600">
+            Find real-time public transport routes, fares, and stop sequences across sub-cities.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Form Column */}
-          <div className="md:col-span-2">
-            <form onSubmit={handleAddRoute} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-              <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <PlusCircle className="w-5 h-5 text-emerald-600" />
-                <span>Create New Route</span>
-              </h2>
+        <SearchForm locations={locations} onSearch={handleSearch} />
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    Route Name
-                  </label>
-                  <input
-                    type="text"
-                    value={routeName}
-                    onChange={(e) => setRouteName(e.target.value)}
-                    placeholder="e.g. Bole to Piazza Express"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    Vehicle Type
-                  </label>
-                  <select
-                    value={vehicleType}
-                    onChange={(e) => setVehicleType(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                  >
-                    <option value="Minibus Taxi">Minibus Taxi</option>
-                    <option value="Anbessa Bus">Anbessa Bus</option>
-                    <option value="Sheger Bus">Sheger Bus</option>
-                    <option value="Light Rail">Light Rail</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    Stop Sequence (Comma Separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={stops}
-                    onChange={(e) => setStops(e.target.value)}
-                    placeholder="e.g. Bole, Gotera, Mexico, Piazza"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    Estimated Base Fare (ETB)
-                  </label>
-                  <input
-                    type="number"
-                    value={baseFare}
-                    onChange={(e) => setBaseFare(e.target.value)}
-                    placeholder="e.g. 15.00"
-                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-sm mt-2"
-                >
-                  Publish Route to Network
-                </button>
-              </div>
-            </form>
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-slate-800">
+              {hasSearched ? 'Search Results' : 'Available Routes'}
+            </h2>
+            <span className="text-xs font-semibold bg-slate-200 text-slate-700 px-2.5 py-1 rounded-full">
+              {isLoading ? 'Searching...' : `${filteredRoutes.length} options found`}
+            </span>
           </div>
 
-          {/* Quick Stats Panel */}
-          <div className="space-y-4">
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-                <List className="w-4 h-4 text-emerald-600" />
-                <span>System Overview</span>
-              </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-600 font-medium">Active Locations</span>
-                  <span className="font-bold text-slate-900">7 Sub-cities</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-600 font-medium">Active Routes</span>
-                  <span className="font-bold text-slate-900">3 Lines</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-600 font-medium">Vehicle Types</span>
-                  <span className="font-bold text-slate-900">4 Categories</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-emerald-950 text-emerald-100 p-5 rounded-2xl border border-emerald-800">
-              <div className="flex items-center gap-2 mb-2 font-bold text-emerald-400 text-sm">
-                <Bus className="w-4 h-4" />
-                <span>Operator Tip</span>
-              </div>
-              <p className="text-xs text-emerald-200/80 leading-relaxed">
-                Ensure stop names match exact location records to enable multi-line transfers in route search.
-              </p>
-            </div>
-          </div>
+          {isLoading ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : (
+            filteredRoutes.map((route) => (
+              <ItineraryCard key={route.route_id} route={route} />
+            ))
+          )}
         </div>
       </div>
     </main>
