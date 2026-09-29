@@ -4,9 +4,9 @@ import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import SearchForm from '@/components/SearchForm';
 import ItineraryCard from '@/components/ItineraryCard';
+import SkeletonCard from '@/components/SkeletonCard';
 import { Location, RouteResult } from '@/lib/types';
 
-// Mock location data (matches Addis Ababa sub-cities)
 const MOCK_LOCATIONS: Location[] = [
   { id: 'loc-1', name: 'Bole', sub_city: 'Bole' },
   { id: 'loc-2', name: 'Megenagna', sub_city: 'Yeka' },
@@ -17,7 +17,6 @@ const MOCK_LOCATIONS: Location[] = [
   { id: 'loc-7', name: 'Kality', sub_city: 'Akaki-Kality' },
 ];
 
-// Mock route data
 const ALL_MOCK_ROUTES: RouteResult[] = [
   {
     route_id: '1',
@@ -51,14 +50,20 @@ const ALL_MOCK_ROUTES: RouteResult[] = [
 export default function Home() {
   const [filteredRoutes, setFilteredRoutes] = useState<RouteResult[]>(ALL_MOCK_ROUTES);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSearch = (originId: string, destinationId: string) => {
+    setIsLoading(true);
     setHasSearched(true);
-    // Filter routes that contain the origin/destination or match the endpoints
-    const matches = ALL_MOCK_ROUTES.filter(
-      (route) => route.origin_stop === originId || route.destination_stop === destinationId
-    );
-    setFilteredRoutes(matches.length > 0 ? matches : ALL_MOCK_ROUTES);
+
+    // Simulate network query delay for testing loading UX
+    setTimeout(() => {
+      const matches = ALL_MOCK_ROUTES.filter(
+        (route) => route.origin_stop === originId || route.destination_stop === destinationId
+      );
+      setFilteredRoutes(matches.length > 0 ? matches : ALL_MOCK_ROUTES);
+      setIsLoading(false);
+    }, 600);
   };
 
   return (
@@ -84,13 +89,20 @@ export default function Home() {
               {hasSearched ? 'Search Results' : 'Available Routes'}
             </h2>
             <span className="text-xs font-semibold bg-slate-200 text-slate-700 px-2.5 py-1 rounded-full">
-              {filteredRoutes.length} options found
+              {isLoading ? 'Searching...' : `${filteredRoutes.length} options found`}
             </span>
           </div>
 
-          {filteredRoutes.map((route) => (
-            <ItineraryCard key={route.route_id} route={route} />
-          ))}
+          {isLoading ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : (
+            filteredRoutes.map((route) => (
+              <ItineraryCard key={route.route_id} route={route} />
+            ))
+          )}
         </div>
       </div>
     </main>
