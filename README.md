@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚌 CityTransit ET
 
-## Getting Started
+**CityTransit ET** is a responsive web application built with Next.js, TypeScript, Tailwind CSS, and Supabase. It provides public transport route searching, fare calculation, stop sequence tracking, and administrative route management across sub-cities in Addis Ababa, Ethiopia.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 👥 Team & Contributions
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### **Developer A: Kenawak Berhanu** — *Backend & Database Lead*
+* **Supabase Infrastructure:** Provisioned the Supabase backend project, configured environment variables, and managed API security.
+* **Database Schema & RLS:** Executed table creations (`locations`, `routes`, `route_stops`), foreign key relationships, and configured Row Level Security (RLS) policies for public read and administrative write access.
+* **Backend Data Pipeline:** Managed seed data insertion for Addis Ababa locations and ensured live data persistence across transit tables.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### **Developer B: Mekdes Tesfaye** — *Frontend Lead & Architecture*
+* **UI/UX Design & Components:** Developed responsive navigation (`Navbar`), search interfaces (`SearchForm`), itinerary display cards (`ItineraryCard`), and animated loading states (`SkeletonCard`).
+* **Page Architecture:** Built the main route search landing page (`src/app/page.tsx`) and the transit management Admin Portal (`src/app/admin/page.tsx`).
+* **Supabase Client Integration:** Configured `@supabase/supabase-js` client SDK (`src/lib/supabase.ts`), TypeScript interfaces (`src/lib/types.ts`), fallback data handling, and SQL database schema scripts (`schema.sql`).
+* **State & Loading Management:** Implemented interactive client-side route filtering and skeleton loading UI during network requests.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🛠️ Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+* **Framework:** Next.js (App Router)
+* **Language:** TypeScript
+* **Styling:** Tailwind CSS
+* **Icons:** Lucide React
+* **Database & BaaS:** Supabase (`@supabase/supabase-js`)
+* **Version Control:** Git & GitHub
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📁 Key Project Structure
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```text
+city-transit/
+├── src/
+│   ├── app/
+│   │   ├── admin/
+│   │   │   └── page.tsx        # Admin Portal for route management
+│   │   ├── layout.tsx          # Root layout with fonts & global styles
+│   │   └── page.tsx            # Main public search & itinerary finder
+│   ├── components/
+│   │   ├── ItineraryCard.tsx   # Transport route card display
+│   │   ├── Navbar.tsx          # Main header navigation
+│   │   ├── SearchForm.tsx      # Origin/destination selector form
+│   │   └── SkeletonCard.tsx    # Animated loading indicator
+│   └── lib/
+│       ├── supabase.ts         # Supabase client helper instance
+│       └── types.ts            # TypeScript interfaces & types
+├── .env.local                  # Supabase environment variables
+├── schema.sql                  # PostgreSQL database schema & seed data
+└── package.json
